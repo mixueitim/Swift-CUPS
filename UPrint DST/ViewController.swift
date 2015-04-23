@@ -13,6 +13,10 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        var server = NSURL(string: "ipp://picket.ics.purdue.edu:631/version=1.1");
+        var c = CUPS(url: server!);
+        c.getPrinters();
+        
     }
 
     override func didReceiveMemoryWarning() {
