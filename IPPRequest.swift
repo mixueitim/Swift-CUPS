@@ -153,7 +153,7 @@ public class IPPRequest{
             stream.write(UnsafePointer(NSData(bytes: &tags[prop.propertyType]!, length: 1).bytes),
                 maxLength: 1);
             
-            //TODO: python reference impl contains additional (nameprinted)
+            //TODO: reference implementation contains additional (nameprinted)
             // check, but i think its redundant
             
             //length of attribute name (2 bytes)
@@ -166,23 +166,39 @@ public class IPPRequest{
             
             
             if ( prop.propertyType == Property.INTEGER || prop.propertyType == Property.ENUM ){
-                //2 bytes of int value 4
-                var operandIntEnum = CFSwapInt16HostToBig(0x0004);
-                stream.write(UnsafePointer(NSData(bytes: &operandIntEnum, length: 2).bytes),
+                //2 bytes of data length
+                var typeIntEnum = CFSwapInt16HostToBig(0x0004);
+                stream.write(UnsafePointer(NSData(bytes: &typeIntEnum, length: 2).bytes),
                     maxLength: 2);
                 //4 more bytes of actual data
                 var data_big = CFSwapInt32HostToBig(prop.getInt32());
                 stream.write(UnsafePointer(NSData(bytes: &data_big, length: 2).bytes),
                     maxLength: 2);
 
+            }else if(prop.propertyType == Property.BOOLEAN){
+                //2 bytes of data length
+                var typeIntEnum = CFSwapInt16HostToBig(0x0001);
+                //1 byte of boolean value
+                stream.write(UnsafePointer(NSData(bytes: &typeIntEnum, length: 1).bytes),
+                    maxLength: 1);
+                
+            }else{
+                //2 bytes of data length
+                var truelen = count(prop.getString());
+                var xlen : UInt16 = CFSwapInt16HostToBig((UInt16)(count(prop.getString())));
+                var typeIntEnum = CFSwapInt16HostToBig(xlen);
+                var NV = NSData(bytes: prop.getString(), length: truelen).bytes;
+                //X bytes of data
+                stream.write(UnsafePointer(NV),
+                    maxLength: truelen);
             }
         }
         
-        
+        stream.write(UnsafePointer(NSData(bytes: &tags["end-of-attributes-tag"], length: 1).bytes),
+            maxLength: 1);
         
         stream.close();
         //end of attrs
-        xbuffer.append(tags["end-of-attributes-tag"]!);
         
         /*if(self.data.length == 0){
             buffer.append(self.data.bytes);
