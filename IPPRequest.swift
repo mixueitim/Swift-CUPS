@@ -120,18 +120,24 @@ public class IPPRequest{
     
     
     func dump() -> NSData {
-        var buffer : [UInt8] = [];
+        var xbuffer = [UInt8](count:2048, repeatedValue:0)
+        var stream : NSOutputStream = NSOutputStream(toBuffer: &xbuffer, capacity: 2048);
+        stream.open();
+        
         //Version number (2 bytes)
-        buffer.append(self.version);
-        buffer.append(self.subVersion);
+        stream.write(UnsafePointer(NSData(bytes: &(self.version), length: 1).bytes),
+            maxLength: 1);
+        stream.write(UnsafePointer(NSData(bytes: &(self.subVersion), length: 1).bytes),
+            maxLength: 1);
         //Operation ID status code (2 bytes)
-        buffer.append((UInt8)(self.operationId >> 8));
-        buffer.append((UInt8)(self.operationId & 0xFF));
+        var opId_big = CFSwapInt16HostToBig(self.operationId);
+        stream.write(UnsafePointer(NSData(bytes: &(opId_big), length: 2).bytes),
+            maxLength: 2);
         //Request ID (4 bytes)
-        buffer.append((UInt8)(self.requestId >> 24));
-        buffer.append((UInt8)(self.requestId >> 16));
-        buffer.append((UInt8)(self.requestId >> 8));
-        buffer.append((UInt8)((self.requestId & 0xFF | 0x01)));
+        requestId = requestId | 0x01;
+        var rqid_big = CFSwapInt32HostToBig(requestId);
+        stream.write(UnsafePointer(NSData(bytes: &(rqid_big), length: 4).bytes),
+            maxLength: 4);
         
         /* Attributes (N bytes)
          * Iterate through all 6 attribute lists
@@ -139,52 +145,48 @@ public class IPPRequest{
         */
         
         //---- Operation Attribute
-        buffer.append(tags["operation-attributes-tag"]!);
+        stream.write(UnsafePointer(NSData(bytes: &tags["operation-attributes-tag"]!, length: 1).bytes),
+            maxLength: 1);
         for (attrname, prop) in operation_attr{
             NSLog("%@ = %@",attrname, prop.propertyType);
             //start byte depending on what type data is
-            buffer.append(tags[prop.propertyType]!);
+            stream.write(UnsafePointer(NSData(bytes: &tags[prop.propertyType]!, length: 1).bytes),
+                maxLength: 1);
             
             //TODO: python reference impl contains additional (nameprinted)
             // check, but i think its redundant
             
             //length of attribute name (2 bytes)
-            buffer.append((UInt8)(count(attrname) >> 8)); //upper byte
-            buffer.append((UInt8)(count(attrname) & 0xFF)); //lower byte
-            
+            var attrname_len : UInt16 = CFSwapInt16HostToBig((UInt16)(count(attrname)));
+            stream.write(UnsafePointer(NSData(bytes: &attrname_len, length: 2).bytes),
+                maxLength: 2);
             //value of attribute name
-            var xalloc = [UInt8](count:1024, repeatedValue:0)
-            var iss : NSOutputStream = NSOutputStream(toBuffer: &xalloc, capacity: 1024);
-            iss.open();
-            self.requestId = 0xAB;
-            var ccbuffer : NSData = NSData(bytes: &self.requestId, length: 4);
-//            iss.write(UnsafePointer(ccbuffer.bytes), maxLength: 4);
-            
-            iss.write(attrname, maxLength: count(attrname));
+            stream.write(attrname,
+                maxLength: count(attrname));
             
             
             if ( prop.propertyType == Property.INTEGER || prop.propertyType == Property.ENUM ){
                 //2 bytes of int value 4
-                buffer.append(0x00);
-                buffer.append((UInt8)(4));
+                var operandIntEnum = CFSwapInt16HostToBig(0x0004);
+                stream.write(UnsafePointer(NSData(bytes: &operandIntEnum, length: 2).bytes),
+                    maxLength: 2);
                 //4 more bytes of actual data
-                buffer.append((UInt8)(prop.getInt32() >> 24));
-                buffer.append((UInt8)(prop.getInt32() >> 16));
-                buffer.append((UInt8)(prop.getInt32() >> 8));
-                buffer.append((UInt8)((prop.getInt32() & 0xFF | 0x01)));
+                var data_big = CFSwapInt32HostToBig(prop.getInt32());
+                stream.write(UnsafePointer(NSData(bytes: &data_big, length: 2).bytes),
+                    maxLength: 2);
 
             }
         }
         
         
         
-        
+        stream.close();
         //end of attrs
-        buffer.append(tags["end-of-attributes-tag"]!);
+        xbuffer.append(tags["end-of-attributes-tag"]!);
         
         /*if(self.data.length == 0){
             buffer.append(self.data.bytes);
         }*/
-        return NSData(bytes: buffer, length: buffer.count);
+        return NSData(bytes: xbuffer, length: xbuffer.count);
     }
 }
