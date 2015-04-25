@@ -41,75 +41,79 @@ public class Property{
 public class IPPMessage{
     var operationId : UInt16 = 0x0000;
     var requestId : UInt32 = 0;
-    var data : NSData;
+    var data : NSData? = nil;
     
-    var version : UInt8;
-    var subVersion : UInt8;
+    var version : UInt8 = 0x01;
+    var subVersion : UInt8 = 0x01;
     
-    var tags : Dictionary<String, UInt8>;
+    var tags : Dictionary<String, UInt8> =    ["operation-attributes-tag": 0x01,
+        "job-attributes-tag": 0x02,
+        "end-of-attributes-tag": 0x03,
+        "printer-attributes-tag": 0x04,
+        "unsupported-attributes-tag" :0x05,
+        "subscription-attributes-tag" : 0x06,
+        "event_notification-attributes-tag" : 0x07,
+        "unsupported" : 0x10,
+        "reserved-for-future-default" : 0x11,
+        "unknown" : 0x12,
+        "no-value" : 0x13,
+        "not-settable" : 0x15,
+        "delete-attribute" : 0x16,
+        "admin-define" : 0x17,
+        "generic-integer" : 0x20,
+        "integer" : 0x21,
+        "boolean" : 0x22,
+        "enum" : 0x23,
+        "octetString-with-an-unspecified-format" : 0x30,
+        "dateTime" : 0x31,
+        "resolution" : 0x32,
+        "rangeOfInteger" : 0x33,
+        "begCollection" : 0x34,
+        "textWithLanguage" : 0x35,
+        "nameWithLanguage" : 0x36,
+        "endCollection" : 0x37,
+        "generic-character-string" : 0x40,
+        "textWithoutLanguage" : 0x41,
+        "nameWithoutLanguage" : 0x42,
+        "keyword" : 0x44,
+        "uri" : 0x45,
+        "uriScheme" : 0x46,
+        "charset" : 0x47,
+        "naturalLanguage" : 0x48,
+        "mimeMediaType" : 0x49,
+        "memberAttrName" : 0x4];
     
-    var operation_attr : [(String, Property)];
-    var job_attr : [(String, Property)];
-    var printer_attr : [(String, Property)];
-    var unsupported_attr : [(String, Property)];
-    var subscription_attr : [(String, Property)];
-    var event_notification_attr : [(String, Property)];
+    var tags_reverse = Dictionary<UInt8, String>();
+    
+    var operation_attr : [(String, Property)] = [(String, Property)]();
+    var job_attr : [(String, Property)] = [(String, Property)]();
+    var printer_attr : [(String, Property)] = [(String, Property)]();
+    var unsupported_attr : [(String, Property)] = [(String, Property)]();
+    var subscription_attr : [(String, Property)] = [(String, Property)]();
+    var event_notification_attr : [(String, Property)] = [(String, Property)]();
 
     
-    init(OpID: UInt16, requestID: UInt32, data: NSData){
+    init(serializeddata: NSData){
+        self.operationId = 0;
+        self.requestId = 0;
+        
+        for (key, value) in tags
+        {
+            tags_reverse[value] = key;
+        }
+
+        self.parse(serializeddata);
+    }
+    
+    init(OpID: UInt16 = 0, requestID: UInt32 = 0){
         // Initializes message
 
-        
         self.operationId = OpID;
         self.requestId = requestID;
-        self.data = data;
-        self.version = 0x01;
-        self.subVersion = 0x01;
-        
-        operation_attr = [(String, Property)]();
-        job_attr = [(String, Property)]();
-        printer_attr = [(String, Property)]();
-        unsupported_attr = [(String, Property)]();
-        subscription_attr = [(String, Property)]();
-        event_notification_attr = [(String, Property)]();
 
-        tags = ["operation-attributes-tag": 0x01,
-            "job-attributes-tag": 0x02,
-            "end-of-attributes-tag": 0x03,
-            "printer-attributes-tag": 0x04,
-            "unsupported-attributes-tag" :0x05,
-            "subscription-attributes-tag" : 0x06,
-            "event_notification-attributes-tag" : 0x07,
-            "unsupported" : 0x10,
-            "reserved-for-future-default" : 0x11,
-            "unknown" : 0x12,
-            "no-value" : 0x13,
-            "not-settable" : 0x15,
-            "delete-attribute" : 0x16,
-            "admin-define" : 0x17,
-            "generic-integer" : 0x20,
-            "integer" : 0x21,
-            "boolean" : 0x22,
-            "enum" : 0x23,
-            "octetString-with-an-unspecified-format" : 0x30,
-            "dateTime" : 0x31,
-            "resolution" : 0x32,
-            "rangeOfInteger" : 0x33,
-            "begCollection" : 0x34,
-            "textWithLanguage" : 0x35,
-            "nameWithLanguage" : 0x36,
-            "endCollection" : 0x37,
-            "generic-character-string" : 0x40,
-            "textWithoutLanguage" : 0x41,
-            "nameWithoutLanguage" : 0x42,
-            "keyword" : 0x44,
-            "uri" : 0x45,
-            "uriScheme" : 0x46,
-            "charset" : 0x47,
-            "naturalLanguage" : 0x48,
-            "mimeMediaType" : 0x49,
-            "memberAttrName" : 0x4];
     }
+    
+    //init(OpID, requestID, fileData)
     
     func setOperationAttribute(attrname: String, prop: Property){
         self.operation_attr.append( (attrname, prop) );
@@ -123,6 +127,7 @@ public class IPPMessage{
         // RFC2910
         var tbuff = [UInt8](count: data.length, repeatedValue:0);
         data.getBytes(&tbuff, length: data.length);
+        
         // Set version
         self.version = tbuff[0];
         // Set subversion
@@ -133,6 +138,60 @@ public class IPPMessage{
         //TODO: Could there be Byte order problem?
         // set Request Id
         
+        
+        var curbyte = 8;
+        var r = tbuff[curbyte];
+        var current_tag : String;
+        do {
+            if( curbyte >= tbuff.count ){
+                println("Unexpected end of message");
+                return;
+            }
+            
+            r = tbuff[curbyte++];
+            let dtagname = self.tags_reverse[r];
+            if(dtagname != nil){
+                println("DTAG: " + dtagname!);
+                current_tag = dtagname!;
+                
+                if(r > 0x07){
+                    //exceed maximum delimiter can be
+                    //so its not a delimiter
+                    curbyte--; //revert back to previous byte
+                    //re interpret the byte as a strtag
+                }
+                
+                let stt = tbuff[curbyte++];
+                var strtagname = self.tags_reverse[stt];
+                print(strtagname! + ": ");
+                
+                //Find Length of (key) value Tag (2 bytes)
+                let bup : UInt16 = (UInt16)(tbuff[curbyte++]);
+                let blo : UInt16 = (UInt16)(tbuff[curbyte++]);
+                let blen : UInt16 = ( (bup << 8) | blo);
+                
+                //read blen more bytes
+                for var off : UInt16 = 0; off < blen; ++off{
+                    let tmpr = tbuff[curbyte++];
+                    print(UnicodeScalar(tmpr));
+                    print("")
+                }
+                println("");
+                print("Value: ");
+                //Find length of data corresponding to value tag (probably 1 byte)
+                let bup2 : UInt16 = (UInt16)(tbuff[curbyte++]);
+                let blo2 : UInt16 = (UInt16)(tbuff[curbyte++]);
+                let blen2 : UInt16 = ( (bup2 << 8) | blo2);
+                
+                //read blen more bytes
+                for var off : UInt16 = 0; off < blen2; ++off{
+                    let tmpr = tbuff[curbyte++];
+                    print(UnicodeScalar(tmpr));
+                }
+                println(" *");
+                                
+            }
+        }while(tbuff[curbyte] != self.tags["end-of-attributes-tag"]);
         
     }
     

@@ -278,14 +278,21 @@ public class CUPS {
         var task = session.dataTaskWithRequest(request, completionHandler: {data, response, error -> Void in
             println("Response: \(response)")
             println("Data: \(data)")
-            var strData = NSString(data: data, encoding: NSUTF8StringEncoding)
+            let httpResp: NSHTTPURLResponse = response as! NSHTTPURLResponse;
+
+            if(httpResp.statusCode == 403){
+                NSLog("Forbidden!");
+                return;
+            }
+            
+            var msg = IPPMessage(serializeddata: data);
         });
         task.resume()
         
     }
     
     func getPrinters(){
-        var m = IPPMessage(OpID: CUPS_GET_PRINTERS, requestID: 0x0000, data: NSData(bytes: [0x00], length: 1));
+        var m = IPPMessage(OpID: CUPS_GET_PRINTERS, requestID: 0x0000);
         
         m.setOperationAttribute("attributes-charset", prop: Property(prop: "charset",value: "utf-8"));
         m.setOperationAttribute("attributes-natural-language", prop: Property(prop: "naturalLanguage",value: "en-us"));
