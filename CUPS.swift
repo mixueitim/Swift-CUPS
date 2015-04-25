@@ -262,25 +262,40 @@ public class CUPS {
         self.url = url;
     }
     
-    func makeRequest(iprq: IPPRequest){
+    func send(iprq: IPPMessage){
+        var request = NSMutableURLRequest(URL: self.url)
+        var session = NSURLSession.sharedSession()
+        var err: NSError?
+        
+        request.HTTPMethod = "POST"
+        
         //Add header Content-Type: application/ipp
-        
+        request.addValue("application/ipp", forHTTPHeaderField: "Content-Type");
         //Make HTTP Request with data stream = IPPRequest dump
-        
+        request.HTTPBody = iprq.dump();
         //Get Response
+        
+        var task = session.dataTaskWithRequest(request, completionHandler: {data, response, error -> Void in
+            println("Response: \(response)")
+            println("Data: \(data)")
+            var strData = NSString(data: data, encoding: NSUTF8StringEncoding)
+        });
+        task.resume()
+        
     }
     
     func getPrinters(){
-        var m = IPPRequest(OpID: CUPS_GET_PRINTERS, requestID: 0x0000, data: NSData(bytes: [0x00], length: 1));
+        var m = IPPMessage(OpID: CUPS_GET_PRINTERS, requestID: 0x0000, data: NSData(bytes: [0x00], length: 1));
         
         m.setOperationAttribute("attributes-charset", prop: Property(prop: "charset",value: "utf-8"));
-//        m.setOperationAttribute("attributes-natural-language", prop: Property(prop: "naturalLanguage",value: "en-us"));
+        m.setOperationAttribute("attributes-natural-language", prop: Property(prop: "naturalLanguage",value: "en-us"));
 
-//        m.setOperationAttribute("requested-attributes", prop: Property(prop: "keyword",value: "printer-name"));
-//        m.setOperationAttribute("printer-type", prop: Property(prop: Property.ENUM, value: 0));
-//        m.setOperationAttribute("printer-type-mask", prop: Property(prop: Property.ENUM, value: (UInt32)(CUPS_PRINTER_CLASS)));
+        m.setOperationAttribute("requested-attributes", prop: Property(prop: "keyword",value: "printer-name"));
+        m.setOperationAttribute("printer-type", prop: Property(prop: Property.ENUM, value: 0));
+        m.setOperationAttribute("printer-type-mask", prop: Property(prop: Property.ENUM, value: (UInt32)(CUPS_PRINTER_CLASS)));
     NSLog("010140020000000101470012617474726962757465732d6368617273657400057574662d3848001b617474726962757465732d6e61747572616c2d6c616e67756167650005656e2d75734400147265717565737465642d61747472696275746573000c7072696e7465722d6e616d6523000c7072696e7465722d747970650004000000002300117072696e7465722d747970652d6d61736b00040000000103");
         NSLog("%@", m.dump());
+        send(m);
     }
     
     func getNextRequestId() -> UInt32{

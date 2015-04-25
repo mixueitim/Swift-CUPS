@@ -14,7 +14,7 @@
 		B43622871AE5926A008FB05D /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = B43622851AE5926A008FB05D /* LaunchScreen.xib */; };
 		B43622931AE5926A008FB05D /* UPrint_DSTTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B43622921AE5926A008FB05D /* UPrint_DSTTests.swift */; };
 		B436229E1AE592CF008FB05D /* CUPS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B436229D1AE592CF008FB05D /* CUPS.swift */; };
-		B4394C331AE6092E0086DCAD /* IPPRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4394C321AE6092E0086DCAD /* IPPRequest.swift */; };
+		B4394C331AE6092E0086DCAD /* IPPMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4394C321AE6092E0086DCAD /* IPPMessage.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,7 +39,7 @@
 		B43622911AE5926A008FB05D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B43622921AE5926A008FB05D /* UPrint_DSTTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UPrint_DSTTests.swift; sourceTree = "<group>"; };
 		B436229D1AE592CF008FB05D /* CUPS.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CUPS.swift; sourceTree = "<group>"; };
-		B4394C321AE6092E0086DCAD /* IPPRequest.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IPPRequest.swift; sourceTree = "<group>"; };
+		B4394C321AE6092E0086DCAD /* IPPMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IPPMessage.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,7 +64,7 @@
 			isa = PBXGroup;
 			children = (
 				B436229C1AE5928C008FB05D /* CUPS */,
-				B43622791AE5926A008FB05D /* UPrint DST */,
+				B43622791AE5926A008FB05D /* App */,
 				B436228F1AE5926A008FB05D /* UPrint DSTTests */,
 				B43622781AE5926A008FB05D /* Products */,
 			);
@@ -79,7 +79,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		B43622791AE5926A008FB05D /* UPrint DST */ = {
+		B43622791AE5926A008FB05D /* App */ = {
 			isa = PBXGroup;
 			children = (
 				B436227C1AE5926A008FB05D /* AppDelegate.swift */,
@@ -89,6 +89,7 @@
 				B43622851AE5926A008FB05D /* LaunchScreen.xib */,
 				B436227A1AE5926A008FB05D /* Supporting Files */,
 			);
+			name = App;
 			path = "UPrint DST";
 			sourceTree = "<group>";
 		};
@@ -121,7 +122,7 @@
 			isa = PBXGroup;
 			children = (
 				B436229D1AE592CF008FB05D /* CUPS.swift */,
-				B4394C321AE6092E0086DCAD /* IPPRequest.swift */,
+				B4394C321AE6092E0086DCAD /* IPPMessage.swift */,
 			);
 			name = CUPS;
 			sourceTree = "<group>";
@@ -227,7 +228,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B436227F1AE5926A008FB05D /* ViewController.swift in Sources */,
-				B4394C331AE6092E0086DCAD /* IPPRequest.swift in Sources */,
+				B4394C331AE6092E0086DCAD /* IPPMessage.swift in Sources */,
 				B436229E1AE592CF008FB05D /* CUPS.swift in Sources */,
 				B436227D1AE5926A008FB05D /* AppDelegate.swift in Sources */,
 			);
