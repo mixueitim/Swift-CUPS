@@ -91,7 +91,16 @@ public class IPPMessage{
     var unsupported_attr : [(String, Property)] = [(String, Property)]();
     var subscription_attr : [(String, Property)] = [(String, Property)]();
     var event_notification_attr : [(String, Property)] = [(String, Property)]();
-
+    
+    var attributes : Dictionary<String, [(String, Property)]> = [
+        "operation-attributes-tag": [(String, Property)](),
+        "job-attributes-tag": [(String, Property)](),
+        "end-of-attributes-tag": [(String, Property)](),
+        "printer-attributes-tag": [(String, Property)](),
+        "unsupported-attributes-tag" :[(String, Property)](),
+        "subscription-attributes-tag" : [(String, Property)](),
+        "event_notification-attributes-tag" : [(String, Property)]()
+    ];
     
     init(serializeddata: NSData){
         self.operationId = 0;
@@ -102,7 +111,10 @@ public class IPPMessage{
             tags_reverse[value] = key;
         }
 
+
+        
         self.parse(serializeddata);
+        
     }
     
     init(OpID: UInt16 = 0, requestID: UInt32 = 0){
@@ -141,7 +153,7 @@ public class IPPMessage{
         
         var curbyte = 8;
         var r = tbuff[curbyte];
-        var current_tag : String;
+        var currentTagValue : UInt8 = 0;
         do {
             if( curbyte >= tbuff.count ){
                 println("Unexpected end of message");
@@ -151,16 +163,18 @@ public class IPPMessage{
             r = tbuff[curbyte++];
             let dtagname = self.tags_reverse[r];
             if(dtagname != nil){
-                println("DTAG: " + dtagname!);
-                current_tag = dtagname!;
                 
                 if(r > 0x07){
                     //exceed maximum delimiter can be
                     //so its not a delimiter
                     curbyte--; //revert back to previous byte
                     //re interpret the byte as a strtag
+                }else{
+                    print("DTAG: " + dtagname! + " value: ");
+                    println(r);
+                    currentTagValue = r;
                 }
-                
+        
                 let stt = tbuff[curbyte++];
                 var strtagname = self.tags_reverse[stt];
                 print(strtagname! + ": ");
@@ -176,6 +190,9 @@ public class IPPMessage{
                     print(UnicodeScalar(tmpr));
                     print("")
                 }
+                
+                
+                
                 println("");
                 print("Value: ");
                 //Find length of data corresponding to value tag (probably 1 byte)
