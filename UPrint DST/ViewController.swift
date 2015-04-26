@@ -19,10 +19,10 @@ class ViewController: UIViewController {
             println(printers);
         });
                 
-//        var filePath = NSBundle.mainBundle().pathForResource("calendar", ofType:"ps")
-//        var filedata = NSData(contentsOfFile:filePath!)
+        var filePath = NSBundle.mainBundle().pathForResource("calendar", ofType:"pdf")
+        var filedata = NSData(contentsOfFile:filePath!)
 
-//        c.requestJob(filedata!)
+        c.requestJob(filedata!)
 
     }
 

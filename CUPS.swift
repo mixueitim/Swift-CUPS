@@ -353,6 +353,7 @@ public class CUPS {
         m.setOperationAttribute("requesting-user-name", prop: Property(prop: "nameWithoutLanguage",value: self.username));
         m.setOperationAttribute("job-name", prop: Property(prop: "nameWithoutLanguage",value: "testdoc"));
         m.setOperationAttribute("ipp-attribute-fidelity", prop: Property(prop: "boolean",value: 0x01));
+        m.setOperationAttribute("document-format", prop: Property(prop: "keyword",value: "application/pdf"));
 
         m.setJobAttribute("copies", prop: Property(prop: "integer", value: 0x00000001));
         m.setJobAttribute("sides", prop: Property(prop: "keyword", value: "two-sided-long-edge"));
