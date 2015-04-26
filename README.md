@@ -1,6 +1,5 @@
 # Distributed UPrint Reference Implementation 
 
-
 DST stands for Distributed System
 
 - IPP implementation (RFC subset)
