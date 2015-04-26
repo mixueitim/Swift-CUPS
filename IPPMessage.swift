@@ -45,7 +45,7 @@ public class Property : Printable{
 public class IPPMessage{
     var operationId : UInt16 = 0x0000;
     var requestId : UInt32 = 0;
-    var data : NSData? = nil;
+    var body : NSData? = nil;
     
     var version : UInt8 = 0x01;
     var subVersion : UInt8 = 0x01;
@@ -89,14 +89,13 @@ public class IPPMessage{
     
     var tags_reverse = Dictionary<UInt8, String>();
     
-    public static let OPERATION_ATTRIBUTES : String = "operation-attributes-tag";
-    public static let JOB_ATTRIBUTES: String = "job-attributes-tag";
-    public static let END_OF_ATTRIBUTES : String = "end-of-attributes-tag";
-    public static let PRINTER_ATTRIBUTES : String = "printer-attributes-tag";
-    public static let UNSUPPORTED_ATTRIBUTES : String = "unsupported-attributes-tag";
-    public static let SUBSCRIPTION_ATTRIBUTES : String = "subscription-attributes-tag";
-    public static let EVENT_NOTIFICATION_ATTRIBUTES : String = "event_notification-attributes-tag";
-    
+    public static var OPERATION_ATTRIBUTES : String = "operation-attributes-tag";
+    public static var JOB_ATTRIBUTES: String = "job-attributes-tag";
+    public static var END_OF_ATTRIBUTES : String = "end-of-attributes-tag";
+    public static var PRINTER_ATTRIBUTES : String = "printer-attributes-tag";
+    public static var UNSUPPORTED_ATTRIBUTES : String = "unsupported-attributes-tag";
+    public static var SUBSCRIPTION_ATTRIBUTES : String = "subscription-attributes-tag";
+    public static var EVENT_NOTIFICATION_ATTRIBUTES : String = "event_notification-attributes-tag";
     
     var attributes : Dictionary<String, [(String, Property)]> = [
         OPERATION_ATTRIBUTES: [(String, Property)](),
@@ -131,10 +130,17 @@ public class IPPMessage{
 
     }
     
-    //init(OpID, requestID, fileData)
+    func setBody(body : NSData){
+        NSLog("%@", body);
+        self.body = body;
+    }
     
     func setOperationAttribute(attrname: String, prop: Property){
         (self.attributes["operation-attributes-tag"]!).append( (attrname, prop) );
+    }
+    
+    func setJobAttribute(attrname: String, prop: Property){
+        (self.attributes["job-attributes-tag"]!).append( (attrname, prop) );
     }
     
     func setRequestId(rqid: UInt32){
@@ -244,9 +250,9 @@ public class IPPMessage{
     }
     
     func dump() -> NSData {
-        var xbuffer = [UInt8](count:2048,
+        var xbuffer = [UInt8](count:2048 + 171*1024,
             repeatedValue:0)
-        var stream : NSOutputStream = NSOutputStream(toBuffer: &xbuffer, capacity: 2048);
+        var stream : NSOutputStream = NSOutputStream(toBuffer: &xbuffer, capacity: 2048 + 171*1024);
         stream.open();
         
         //Version number (2 bytes)
@@ -259,7 +265,7 @@ public class IPPMessage{
         stream.write(UnsafePointer(NSData(bytes: &(opId_big), length: 2).bytes),
             maxLength: 2);
         //Request ID (4 bytes)
-        requestId = requestId | 0x0001;
+        requestId = requestId | 0x1;
         var rqid_big = CFSwapInt32HostToBig(requestId);
         stream.write(UnsafePointer(NSData(bytes: &(rqid_big), length: 4).bytes),
             maxLength: 4);
@@ -270,70 +276,83 @@ public class IPPMessage{
         */
         
         //---- Operation Attribute
-        stream.write(UnsafePointer(NSData(bytes: &tags["operation-attributes-tag"]!, length: 1).bytes),
-            maxLength: 1);
-        for (attrname, prop) in (self.attributes["operation-attributes-tag"]!){
-            //start byte depending on what type data is
-            stream.write(UnsafePointer(NSData(bytes: &tags[prop.propertyType]!, length: 1).bytes),
-                maxLength: 1);
-            
-            //TODO: reference implementation contains additional (nameprinted)
-            // check, but i think its redundant
-            
-            //length of attribute name (2 bytes)
-            var attrname_len : UInt16 = CFSwapInt16HostToBig((UInt16)(count(attrname)));
-            stream.write(UnsafePointer(NSData(bytes: &attrname_len, length: 2).bytes),
-                maxLength: 2);
-            //value of attribute name
-            stream.write(attrname,
-                maxLength: count(attrname));
-            
-            
-            if ( prop.propertyType == Property.INTEGER || prop.propertyType == Property.ENUM ){
-                //2 bytes of data length
-                var typeIntEnum = CFSwapInt16HostToBig(0x0004);
-                stream.write(UnsafePointer(NSData(bytes: &typeIntEnum, length: 2).bytes),
-                    maxLength: 2);
-                //4 more bytes of actual data
-                var data_big = CFSwapInt32HostToBig(prop.getInt32());
-                stream.write(UnsafePointer(NSData(bytes: &data_big, length: 4).bytes),
-                    maxLength: 4);
-
-            }else if(prop.propertyType == Property.BOOLEAN){
-                //2 bytes of data length
-                var typeIntEnum = CFSwapInt16HostToBig(0x0001);
-                stream.write(UnsafePointer(NSData(bytes: &typeIntEnum, length: 2).bytes),
-                    maxLength: 2);
-                //1 byte of boolean value
-                var offr = prop.getInt32();
-                stream.write(UnsafePointer(NSData(bytes: &offr, length: 1).bytes),
-                    maxLength: 1);
-            }else{
-                
-                var truelen = count(prop.getString());
-                var edianlen : UInt16 = CFSwapInt16HostToBig((UInt16)(count(prop.getString())));
-                
-                //2 bytes of data length
-                stream.write(UnsafePointer(NSData(bytes: &edianlen, length: 2).bytes),
-                    maxLength: 2);
-                
-                //X bytes of data
-                var NV = NSData(bytes: prop.getString(), length: truelen).bytes;
-                stream.write(UnsafePointer(NV),
-                    maxLength: truelen);
+        
+        
+        for attr_key in ["operation-attributes-tag",
+            "job-attributes-tag", "end-of-attributes-tag",
+            "printer-attributes-tag", "unsupported-attributes-tag",
+            "subscription-attributes-tag", "event_notification-attributes-tag"]{
+            if(self.attributes[attr_key]!.count == 0){
+                continue;
             }
-            
+            stream.write(UnsafePointer(NSData(bytes: &tags[attr_key]!, length: 1).bytes),
+                maxLength: 1);
+            for (attrname, prop) in (self.attributes[attr_key]!){
+                //start byte depending on what type data is
+                stream.write(UnsafePointer(NSData(bytes: &tags[prop.propertyType]!, length: 1).bytes),
+                    maxLength: 1);
+                
+                //TODO: reference implementation contains additional (nameprinted)
+                // check, but i think its redundant
+                
+                //length of attribute name (2 bytes)
+                var attrname_len : UInt16 = CFSwapInt16HostToBig((UInt16)(count(attrname)));
+                stream.write(UnsafePointer(NSData(bytes: &attrname_len, length: 2).bytes),
+                    maxLength: 2);
+                //value of attribute name
+                stream.write(attrname,
+                    maxLength: count(attrname));
+                
+                
+                if ( prop.propertyType == Property.INTEGER || prop.propertyType == Property.ENUM ){
+                    //2 bytes of data length
+                    var typeIntEnum = CFSwapInt16HostToBig(0x0004);
+                    stream.write(UnsafePointer(NSData(bytes: &typeIntEnum, length: 2).bytes),
+                        maxLength: 2);
+                    //4 more bytes of actual data
+                    var data_big = CFSwapInt32HostToBig(prop.getInt32());
+                    stream.write(UnsafePointer(NSData(bytes: &data_big, length: 4).bytes),
+                        maxLength: 4);
+                    
+                }else if(prop.propertyType == Property.BOOLEAN){
+                    //2 bytes of data length
+                    var typeIntEnum = CFSwapInt16HostToBig(0x0001);
+                    stream.write(UnsafePointer(NSData(bytes: &typeIntEnum, length: 2).bytes),
+                        maxLength: 2);
+                    //1 byte of boolean value
+                    var offr = prop.getInt32();
+                    stream.write(UnsafePointer(NSData(bytes: &offr, length: 1).bytes),
+                        maxLength: 1);
+                }else{
+                    
+                    var truelen = count(prop.getString());
+                    var edianlen : UInt16 = CFSwapInt16HostToBig((UInt16)(count(prop.getString())));
+                    
+                    //2 bytes of data length
+                    stream.write(UnsafePointer(NSData(bytes: &edianlen, length: 2).bytes),
+                        maxLength: 2);
+                    
+                    //X bytes of data
+                    var NV = NSData(bytes: prop.getString(), length: truelen).bytes;
+                    stream.write(UnsafePointer(NV),
+                        maxLength: truelen);
+                }
+                
+            }
         }
         
         stream.write(UnsafePointer(NSData(bytes: &tags["end-of-attributes-tag"], length: 1).bytes),
             maxLength: 1);
         
-        stream.close();
+        
         //end of attrs
         
-        /*if(self.data.length == 0){
-            buffer.append(self.data.bytes);
-        }*/
+        if(self.body != nil){
+            stream.write(UnsafePointer(self.body!.bytes),
+                maxLength: self.body!.length);
+        }
+        
+        stream.close();
         return NSData(bytes: xbuffer, length: xbuffer.count);
     }
 }

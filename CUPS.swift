@@ -277,9 +277,18 @@ public class CUPS {
         request.HTTPBody = iprq.dump();
         //Get Response
         var task = session.dataTaskWithRequest(request, completionHandler: {data, response, error -> Void in
-            if(Configs.DEBUG_APPLICATION){
+            if(Configs.DEBUG_NETWORK){
                 println("Response: \(response)")
                 println("Data: \(data)")
+                let count = data.length / sizeof(UInt32)
+                
+                // create array of appropriate length:
+                var array = [UInt32](count: count, repeatedValue: 0)
+                
+                // copy bytes into array
+                data.getBytes(&array, length:count * sizeof(UInt32))
+                
+                println(array)
             }
             let httpResp: NSHTTPURLResponse = response as! NSHTTPURLResponse;
             if(httpResp.statusCode == 403){
@@ -322,27 +331,27 @@ public class CUPS {
         
     }
     
-    func requestJob(){
+    func requestJob(document : NSData){
         //RFC2910 13.1
         var m = IPPMessage(OpID: IPP_PRINT_JOB, requestID: 0x0001);
         
         m.setOperationAttribute("attributes-charset", prop: Property(prop: "charset",value: "utf-8"));
         m.setOperationAttribute("attributes-natural-language", prop: Property(prop: "naturalLanguage",value: "en-us"));
-        m.setOperationAttribute("printer-uri", prop: Property(prop: "uri",value: "ipp://picket.ics.purdue.edu:631/printers/itap-printing"));
-
-        m.setOperationAttribute("job-name", prop: Property(prop: "nameWithoutLanguage",value: "foobar"));
+        m.setOperationAttribute("printer-uri", prop: Property(prop: "uri",value: "ipp://picket.ics.purdue.edu:631/printers/fstc1h04"));
+        m.setOperationAttribute("requesting-user-name", prop: Property(prop: "nameWithoutLanguage",value: "ssabpisa"));
+        m.setOperationAttribute("job-name", prop: Property(prop: "nameWithoutLanguage",value: "foobar3"));
         m.setOperationAttribute("ipp-attribute-fidelity", prop: Property(prop: "boolean",value: 0x01));
+
+        m.setJobAttribute("copies", prop: Property(prop: "integer", value: 0x00000001));
+        m.setJobAttribute("sides", prop: Property(prop: "keyword", value: "two-sided-long-edge"));
+        m.setBody(document);
         
         var NDA = m.dump();
-        // the number of elements:
-        let count = NDA.length / sizeof(UInt8)
-        // create array of appropriate length:
-        var array = [UInt8](count: count, repeatedValue: 0)
-        // copy bytes into array
-        NDA.getBytes(&array, length:count * sizeof(UInt8))
-
-        NSLog("%@", NDA.bytes);
-    
+        NSLog("Job = %@", NDA);
+        
+        send(m, callback: { response in
+            println(response);
+        });
 
     }
     

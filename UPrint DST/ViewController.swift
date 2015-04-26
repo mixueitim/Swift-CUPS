@@ -18,7 +18,12 @@ class ViewController: UIViewController {
 //        c.getPrinters({ printers in
 //            println(printers);
 //        });
-        c.requestJob()
+        
+        
+        var filePath = NSBundle.mainBundle().pathForResource("calendar", ofType:"ps")
+        var filedata = NSData(contentsOfFile:filePath!)
+
+        c.requestJob(filedata!)
 
     }
 
