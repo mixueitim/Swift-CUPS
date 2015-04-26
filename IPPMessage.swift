@@ -162,7 +162,9 @@ public class IPPMessage{
         var currentTagValue : String = "";
         do {
             if( curbyte >= tbuff.count ){
-                println("Unexpected end of message");
+                if(Configs.DEBUG_NETWORK){
+                    println("Unexpected end of message");
+                }
                 return;
             }
             
@@ -176,8 +178,10 @@ public class IPPMessage{
                     curbyte--; //revert back to previous byte
                     //re interpret the byte as a strtag
                 }else{
-                    print("DTAG: " + dtagname! + " value: ");
-                    println(r);
+                    if(Configs.DEBUG_NETWORK){
+                        print("DTAG: " + dtagname! + " value: ");
+                        println(r);
+                    }
                     currentTagValue = dtagname!;
                 }
                 
@@ -185,7 +189,10 @@ public class IPPMessage{
         
                 let stt = tbuff[curbyte++];
                 var str_tag_type = self.tags_reverse[stt];
-                print(str_tag_type! + ": ");
+                
+                if(Configs.DEBUG_NETWORK){
+                    print(str_tag_type! + ": ");
+                }
                 
                 
                 //Find Length of (key) value Tag (2 bytes)
@@ -198,15 +205,19 @@ public class IPPMessage{
                 //read blen more bytes
                 for var off : UInt16 = 0; off < blen; ++off{
                     let tmpr = tbuff[curbyte++];
-                    print(UnicodeScalar(tmpr));
+                    if(Configs.DEBUG_NETWORK){
+                        print(UnicodeScalar(tmpr));
+                    }
                     tmpr_reconstruct = tmpr_reconstruct + String(UnicodeScalar(tmpr));
-                    print("")
                 }
                 
                 var value_reconstruct : String = "";
 
-                println("");
-                print("Value: ");
+                if(Configs.DEBUG_NETWORK){
+                    println("");
+                    print("Value: ");
+                }
+                
                 //Find length of data corresponding to value tag (probably 1 byte)
                 let bup2 : UInt16 = (UInt16)(tbuff[curbyte++]);
                 let blo2 : UInt16 = (UInt16)(tbuff[curbyte++]);
@@ -215,10 +226,14 @@ public class IPPMessage{
                 //read blen more bytes
                 for var off : UInt16 = 0; off < blen2; ++off{
                     let tmpr = tbuff[curbyte++];
-                    print(UnicodeScalar(tmpr));
+                    if(Configs.DEBUG_NETWORK){
+                        print(UnicodeScalar(tmpr));
+                    }
                     value_reconstruct = value_reconstruct + String(UnicodeScalar(tmpr));
                 }
-                println(" *");
+                if(Configs.DEBUG_NETWORK){
+                    println(" *");
+                }
                 
                 //TODO: How do we handle Int32 type `value_reconstruct`
                 (self.attributes[currentTagValue]!).append( tmpr_reconstruct as String, Property(prop: str_tag_type!, value: value_reconstruct)   );

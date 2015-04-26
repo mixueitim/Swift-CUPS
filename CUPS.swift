@@ -113,7 +113,7 @@ public class CUPS {
      var IPP_ATTRIBUTE = 2;
      var IPP_DATA = 3;
     
-     var IPP_PRINT_JOB = 0x0002;
+     var IPP_PRINT_JOB: UInt16 = 0x0002;
      var IPP_PRINT_URI = 0x0003;
      var IPP_VALIDATE_JOB = 0x0004;
      var IPP_CREATE_JOB = 0x0005;
@@ -258,7 +258,9 @@ public class CUPS {
         if(url.scheme == "ipp"){
             //set it to http
         }
-        NSLog("Will connect %@", url);
+        if(Configs.DEBUG_APPLICATION){
+            NSLog("Will connect %@", url);
+        }
         self.url = url;
     }
     
@@ -275,11 +277,15 @@ public class CUPS {
         request.HTTPBody = iprq.dump();
         //Get Response
         var task = session.dataTaskWithRequest(request, completionHandler: {data, response, error -> Void in
-            println("Response: \(response)")
-            println("Data: \(data)")
+            if(Configs.DEBUG_APPLICATION){
+                println("Response: \(response)")
+                println("Data: \(data)")
+            }
             let httpResp: NSHTTPURLResponse = response as! NSHTTPURLResponse;
             if(httpResp.statusCode == 403){
-                NSLog("Forbidden!");
+                if(Configs.DEBUG_APPLICATION){
+                    println("Forbidden! Outside firewall?");
+                }
                 return;
             }
             msg = IPPMessage(serializeddata: data);
@@ -289,7 +295,7 @@ public class CUPS {
         task.resume()
     }
     
-    func getPrinters(){
+    func getPrinters(done: ([Printer]!) -> Void){
         var m = IPPMessage(OpID: CUPS_GET_PRINTERS, requestID: 0x0000);
         
         m.setOperationAttribute("attributes-charset", prop: Property(prop: "charset",value: "utf-8"));
@@ -299,12 +305,45 @@ public class CUPS {
         m.setOperationAttribute("printer-type", prop: Property(prop: Property.ENUM, value: 0));
         m.setOperationAttribute("printer-type-mask", prop: Property(prop: Property.ENUM, value: (UInt32)(CUPS_PRINTER_CLASS)));
     
-        NSLog("Request %@", m.dump());
+        if(Configs.DEBUG_NETWORK){
+            NSLog("Request %@", m.dump());
+        }
+        
+        var printerList = [Printer]();
         
         send(m, callback: { response in
-           println(response.attributes[IPPMessage.PRINTER_ATTRIBUTES]);
+            var resultlist = response.attributes[IPPMessage.PRINTER_ATTRIBUTES]!;
+            for (ak : String, av : Property) in resultlist{
+                var printer = Printer(printer_name: av.getString());
+                printerList.append(printer);
+            }
+            done(printerList);
         });
         
+    }
+    
+    func requestJob(){
+        //RFC2910 13.1
+        var m = IPPMessage(OpID: IPP_PRINT_JOB, requestID: 0x0001);
+        
+        m.setOperationAttribute("attributes-charset", prop: Property(prop: "charset",value: "utf-8"));
+        m.setOperationAttribute("attributes-natural-language", prop: Property(prop: "naturalLanguage",value: "en-us"));
+        m.setOperationAttribute("printer-uri", prop: Property(prop: "uri",value: "ipp://picket.ics.purdue.edu:631/printers/itap-printing"));
+
+        m.setOperationAttribute("job-name", prop: Property(prop: "nameWithoutLanguage",value: "foobar"));
+        m.setOperationAttribute("ipp-attribute-fidelity", prop: Property(prop: "boolean",value: 0x01));
+        
+        var NDA = m.dump();
+        // the number of elements:
+        let count = NDA.length / sizeof(UInt8)
+        // create array of appropriate length:
+        var array = [UInt8](count: count, repeatedValue: 0)
+        // copy bytes into array
+        NDA.getBytes(&array, length:count * sizeof(UInt8))
+
+        NSLog("%@", NDA.bytes);
+    
+
     }
     
     func getNextRequestId() -> UInt32{

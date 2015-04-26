@@ -15,6 +15,8 @@
 		B43622931AE5926A008FB05D /* UPrint_DSTTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B43622921AE5926A008FB05D /* UPrint_DSTTests.swift */; };
 		B436229E1AE592CF008FB05D /* CUPS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B436229D1AE592CF008FB05D /* CUPS.swift */; };
 		B4394C331AE6092E0086DCAD /* IPPMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4394C321AE6092E0086DCAD /* IPPMessage.swift */; };
+		B4D6499E1AEC78EB00058776 /* Printer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D6499D1AEC78EB00058776 /* Printer.swift */; };
+		B4D649A01AEC987F00058776 /* Configs.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4D6499F1AEC987F00058776 /* Configs.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,6 +42,8 @@
 		B43622921AE5926A008FB05D /* UPrint_DSTTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UPrint_DSTTests.swift; sourceTree = "<group>"; };
 		B436229D1AE592CF008FB05D /* CUPS.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CUPS.swift; sourceTree = "<group>"; };
 		B4394C321AE6092E0086DCAD /* IPPMessage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IPPMessage.swift; sourceTree = "<group>"; };
+		B4D6499D1AEC78EB00058776 /* Printer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Printer.swift; sourceTree = "<group>"; };
+		B4D6499F1AEC987F00058776 /* Configs.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Configs.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -121,8 +125,10 @@
 		B436229C1AE5928C008FB05D /* CUPS */ = {
 			isa = PBXGroup;
 			children = (
+				B4D6499F1AEC987F00058776 /* Configs.swift */,
 				B436229D1AE592CF008FB05D /* CUPS.swift */,
 				B4394C321AE6092E0086DCAD /* IPPMessage.swift */,
+				B4D6499D1AEC78EB00058776 /* Printer.swift */,
 			);
 			name = CUPS;
 			sourceTree = "<group>";
@@ -228,9 +234,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				B436227F1AE5926A008FB05D /* ViewController.swift in Sources */,
+				B4D6499E1AEC78EB00058776 /* Printer.swift in Sources */,
 				B4394C331AE6092E0086DCAD /* IPPMessage.swift in Sources */,
 				B436229E1AE592CF008FB05D /* CUPS.swift in Sources */,
 				B436227D1AE5926A008FB05D /* AppDelegate.swift in Sources */,
+				B4D649A01AEC987F00058776 /* Configs.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
