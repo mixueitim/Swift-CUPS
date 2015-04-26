@@ -262,33 +262,31 @@ public class CUPS {
         self.url = url;
     }
     
-    func send(iprq: IPPMessage){
+    func send(iprq: IPPMessage, callback: (IPPMessage!) -> Void) {
         var request = NSMutableURLRequest(URL: self.url)
         var session = NSURLSession.sharedSession()
         var err: NSError?
         
         request.HTTPMethod = "POST"
-        
+        var msg : IPPMessage?;
         //Add header Content-Type: application/ipp
         request.addValue("application/ipp", forHTTPHeaderField: "Content-Type");
         //Make HTTP Request with data stream = IPPRequest dump
         request.HTTPBody = iprq.dump();
         //Get Response
-        
         var task = session.dataTaskWithRequest(request, completionHandler: {data, response, error -> Void in
             println("Response: \(response)")
             println("Data: \(data)")
             let httpResp: NSHTTPURLResponse = response as! NSHTTPURLResponse;
-
             if(httpResp.statusCode == 403){
                 NSLog("Forbidden!");
                 return;
             }
+            msg = IPPMessage(serializeddata: data);
+            callback(msg);
             
-            var msg = IPPMessage(serializeddata: data);
         });
         task.resume()
-        
     }
     
     func getPrinters(){
@@ -300,9 +298,13 @@ public class CUPS {
         m.setOperationAttribute("requested-attributes", prop: Property(prop: "keyword",value: "printer-name"));
         m.setOperationAttribute("printer-type", prop: Property(prop: Property.ENUM, value: 0));
         m.setOperationAttribute("printer-type-mask", prop: Property(prop: Property.ENUM, value: (UInt32)(CUPS_PRINTER_CLASS)));
-    NSLog("010140020000000101470012617474726962757465732d6368617273657400057574662d3848001b617474726962757465732d6e61747572616c2d6c616e67756167650005656e2d75734400147265717565737465642d61747472696275746573000c7072696e7465722d6e616d6523000c7072696e7465722d747970650004000000002300117072696e7465722d747970652d6d61736b00040000000103");
-        NSLog("%@", m.dump());
-        send(m);
+    
+        NSLog("Request %@", m.dump());
+        
+        send(m, callback: { response in
+           println(response.attributes[IPPMessage.PRINTER_ATTRIBUTES]);
+        });
+        
     }
     
     func getNextRequestId() -> UInt32{

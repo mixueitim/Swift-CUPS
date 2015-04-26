@@ -8,7 +8,7 @@
 
 import Foundation
 
-public class Property{
+public class Property : Printable{
     
     public static var ENUM = "enum";
     public static var BOOLEAN = "boolean";
@@ -35,6 +35,10 @@ public class Property{
     
     func getInt32() -> UInt32{
         return int32Value;
+    }
+    
+    public var description: String {
+        return "(\(propertyType), \(stringValue))"
     }
 }
 
@@ -85,21 +89,23 @@ public class IPPMessage{
     
     var tags_reverse = Dictionary<UInt8, String>();
     
-    var operation_attr : [(String, Property)] = [(String, Property)]();
-    var job_attr : [(String, Property)] = [(String, Property)]();
-    var printer_attr : [(String, Property)] = [(String, Property)]();
-    var unsupported_attr : [(String, Property)] = [(String, Property)]();
-    var subscription_attr : [(String, Property)] = [(String, Property)]();
-    var event_notification_attr : [(String, Property)] = [(String, Property)]();
+    public static let OPERATION_ATTRIBUTES : String = "operation-attributes-tag";
+    public static let JOB_ATTRIBUTES: String = "job-attributes-tag";
+    public static let END_OF_ATTRIBUTES : String = "end-of-attributes-tag";
+    public static let PRINTER_ATTRIBUTES : String = "printer-attributes-tag";
+    public static let UNSUPPORTED_ATTRIBUTES : String = "unsupported-attributes-tag";
+    public static let SUBSCRIPTION_ATTRIBUTES : String = "subscription-attributes-tag";
+    public static let EVENT_NOTIFICATION_ATTRIBUTES : String = "event_notification-attributes-tag";
+    
     
     var attributes : Dictionary<String, [(String, Property)]> = [
-        "operation-attributes-tag": [(String, Property)](),
-        "job-attributes-tag": [(String, Property)](),
-        "end-of-attributes-tag": [(String, Property)](),
-        "printer-attributes-tag": [(String, Property)](),
-        "unsupported-attributes-tag" :[(String, Property)](),
-        "subscription-attributes-tag" : [(String, Property)](),
-        "event_notification-attributes-tag" : [(String, Property)]()
+        OPERATION_ATTRIBUTES: [(String, Property)](),
+        JOB_ATTRIBUTES: [(String, Property)](),
+        END_OF_ATTRIBUTES: [(String, Property)](),
+        PRINTER_ATTRIBUTES: [(String, Property)](),
+        UNSUPPORTED_ATTRIBUTES :[(String, Property)](),
+        SUBSCRIPTION_ATTRIBUTES : [(String, Property)](),
+        EVENT_NOTIFICATION_ATTRIBUTES: [(String, Property)]()
     ];
     
     init(serializeddata: NSData){
@@ -128,7 +134,7 @@ public class IPPMessage{
     //init(OpID, requestID, fileData)
     
     func setOperationAttribute(attrname: String, prop: Property){
-        self.operation_attr.append( (attrname, prop) );
+        (self.attributes["operation-attributes-tag"]!).append( (attrname, prop) );
     }
     
     func setRequestId(rqid: UInt32){
@@ -153,7 +159,7 @@ public class IPPMessage{
         
         var curbyte = 8;
         var r = tbuff[curbyte];
-        var currentTagValue : UInt8 = 0;
+        var currentTagValue : String = "";
         do {
             if( curbyte >= tbuff.count ){
                 println("Unexpected end of message");
@@ -172,27 +178,33 @@ public class IPPMessage{
                 }else{
                     print("DTAG: " + dtagname! + " value: ");
                     println(r);
-                    currentTagValue = r;
+                    currentTagValue = dtagname!;
                 }
+                
+                
         
                 let stt = tbuff[curbyte++];
-                var strtagname = self.tags_reverse[stt];
-                print(strtagname! + ": ");
+                var str_tag_type = self.tags_reverse[stt];
+                print(str_tag_type! + ": ");
+                
                 
                 //Find Length of (key) value Tag (2 bytes)
                 let bup : UInt16 = (UInt16)(tbuff[curbyte++]);
                 let blo : UInt16 = (UInt16)(tbuff[curbyte++]);
                 let blen : UInt16 = ( (bup << 8) | blo);
                 
+                var tmpr_reconstruct : String = "";
+                
                 //read blen more bytes
                 for var off : UInt16 = 0; off < blen; ++off{
                     let tmpr = tbuff[curbyte++];
                     print(UnicodeScalar(tmpr));
+                    tmpr_reconstruct = tmpr_reconstruct + String(UnicodeScalar(tmpr));
                     print("")
                 }
                 
-                
-                
+                var value_reconstruct : String = "";
+
                 println("");
                 print("Value: ");
                 //Find length of data corresponding to value tag (probably 1 byte)
@@ -204,9 +216,13 @@ public class IPPMessage{
                 for var off : UInt16 = 0; off < blen2; ++off{
                     let tmpr = tbuff[curbyte++];
                     print(UnicodeScalar(tmpr));
+                    value_reconstruct = value_reconstruct + String(UnicodeScalar(tmpr));
                 }
                 println(" *");
-                                
+                
+                //TODO: How do we handle Int32 type `value_reconstruct`
+                (self.attributes[currentTagValue]!).append( tmpr_reconstruct as String, Property(prop: str_tag_type!, value: value_reconstruct)   );
+
             }
         }while(tbuff[curbyte] != self.tags["end-of-attributes-tag"]);
         
@@ -241,8 +257,7 @@ public class IPPMessage{
         //---- Operation Attribute
         stream.write(UnsafePointer(NSData(bytes: &tags["operation-attributes-tag"]!, length: 1).bytes),
             maxLength: 1);
-        for (attrname, prop) in operation_attr{
-            NSLog("%@ = %@",attrname, prop.propertyType);
+        for (attrname, prop) in (self.attributes["operation-attributes-tag"]!){
             //start byte depending on what type data is
             stream.write(UnsafePointer(NSData(bytes: &tags[prop.propertyType]!, length: 1).bytes),
                 maxLength: 1);
