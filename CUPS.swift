@@ -254,10 +254,11 @@ public class CUPS {
      var password : String = "";
      var url : NSURL;
     
-    init(url: NSURL){
+    init(url: NSURL, username : String){
         if(url.scheme == "ipp"){
             //set it to http
         }
+        self.username = username;
         if(Configs.DEBUG_APPLICATION){
             NSLog("Will connect %@", url);
         }
@@ -311,6 +312,8 @@ public class CUPS {
         m.setOperationAttribute("attributes-natural-language", prop: Property(prop: "naturalLanguage",value: "en-us"));
 
         m.setOperationAttribute("requested-attributes", prop: Property(prop: "keyword",value: "printer-name"));
+        m.setOperationAttribute("requested-attributes", prop: Property(prop: "keyword",value: "printer-more-info"));
+        
         m.setOperationAttribute("printer-type", prop: Property(prop: Property.ENUM, value: 0));
         m.setOperationAttribute("printer-type-mask", prop: Property(prop: Property.ENUM, value: (UInt32)(CUPS_PRINTER_CLASS)));
     
@@ -322,9 +325,18 @@ public class CUPS {
         
         send(m, callback: { response in
             var resultlist = response.attributes[IPPMessage.PRINTER_ATTRIBUTES]!;
+            var printer_name : String = "";
             for (ak : String, av : Property) in resultlist{
-                var printer = Printer(printer_name: av.getString());
-                printerList.append(printer);
+                println(ak)
+                if(ak == "printer-name"){
+                    printer_name = av.getString()
+                }else if(ak == "printer-more-info"){
+                    var url : String = av.getString();
+                    var printer = Printer( printer_name: printer_name,
+                        printer_url: NSURL(string: url)!);
+                    printerList.append(printer);
+                }
+
             }
             done(printerList);
         });
@@ -338,8 +350,8 @@ public class CUPS {
         m.setOperationAttribute("attributes-charset", prop: Property(prop: "charset",value: "utf-8"));
         m.setOperationAttribute("attributes-natural-language", prop: Property(prop: "naturalLanguage",value: "en-us"));
         m.setOperationAttribute("printer-uri", prop: Property(prop: "uri",value: "ipp://picket.ics.purdue.edu:631/printers/fstc1h04"));
-        m.setOperationAttribute("requesting-user-name", prop: Property(prop: "nameWithoutLanguage",value: "ssabpisa"));
-        m.setOperationAttribute("job-name", prop: Property(prop: "nameWithoutLanguage",value: "foobar3"));
+        m.setOperationAttribute("requesting-user-name", prop: Property(prop: "nameWithoutLanguage",value: self.username));
+        m.setOperationAttribute("job-name", prop: Property(prop: "nameWithoutLanguage",value: "testdoc"));
         m.setOperationAttribute("ipp-attribute-fidelity", prop: Property(prop: "boolean",value: 0x01));
 
         m.setJobAttribute("copies", prop: Property(prop: "integer", value: 0x00000001));

@@ -285,23 +285,33 @@ public class IPPMessage{
             if(self.attributes[attr_key]!.count == 0){
                 continue;
             }
+            
+            var attr_added : [String] = [];
             stream.write(UnsafePointer(NSData(bytes: &tags[attr_key]!, length: 1).bytes),
                 maxLength: 1);
             for (attrname, prop) in (self.attributes[attr_key]!){
-                //start byte depending on what type data is
-                stream.write(UnsafePointer(NSData(bytes: &tags[prop.propertyType]!, length: 1).bytes),
-                    maxLength: 1);
+
                 
-                //TODO: reference implementation contains additional (nameprinted)
-                // check, but i think its redundant
-                
-                //length of attribute name (2 bytes)
-                var attrname_len : UInt16 = CFSwapInt16HostToBig((UInt16)(count(attrname)));
-                stream.write(UnsafePointer(NSData(bytes: &attrname_len, length: 2).bytes),
-                    maxLength: 2);
-                //value of attribute name
-                stream.write(attrname,
-                    maxLength: count(attrname));
+                if(!contains(attr_added, attrname)){
+                    //start byte depending on what type data is (keyword, blabla)
+                    stream.write(UnsafePointer(NSData(bytes: &tags[prop.propertyType]!, length: 1).bytes),
+                        maxLength: 1);
+                    //length of attribute name (2 bytes)
+                    var attrname_len : UInt16 = CFSwapInt16HostToBig((UInt16)(count(attrname)));
+                    stream.write(UnsafePointer(NSData(bytes: &attrname_len, length: 2).bytes),
+                        maxLength: 2);
+                    //value of attribute name
+                    stream.write(attrname,
+                        maxLength: count(attrname));
+                    attr_added.append(attrname);
+                }else{
+                    //value type tag for additional value
+                    stream.write(UnsafePointer(NSData(bytes: &tags[prop.propertyType]!, length: 1).bytes),
+                        maxLength: 1);
+                    var additional_value_tag = 0x0000;
+                    stream.write(UnsafePointer(NSData(bytes: &additional_value_tag, length: 2).bytes),
+                        maxLength: 2);
+                }
                 
                 
                 if ( prop.propertyType == Property.INTEGER || prop.propertyType == Property.ENUM ){

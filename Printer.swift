@@ -10,12 +10,14 @@ import Foundation
 
 class Printer : Printable{
     var name : String = "";
-    init(printer_name : String)
+    var url : NSURL;
+    init(printer_name : String, printer_url: NSURL)
     {
         self.name = printer_name;
+        self.url = printer_url;
     }
     
     internal var description: String {
-        return "[Printer \(name)]"
+        return "[Printer \(name) \(url)]"
     }
 }

@@ -14,16 +14,15 @@ class ViewController: UIViewController {
         super.viewDidLoad()
 
         var server = NSURL(string: "http://picket.ics.purdue.edu:631/version=1.1");
-        var c = CUPS(url: server!);
-//        c.getPrinters({ printers in
-//            println(printers);
-//        });
-        
-        
-        var filePath = NSBundle.mainBundle().pathForResource("calendar", ofType:"ps")
-        var filedata = NSData(contentsOfFile:filePath!)
+        var c = CUPS(url: server!, username: "ssabpisa");
+        c.getPrinters({ printers in
+            println(printers);
+        });
+                
+//        var filePath = NSBundle.mainBundle().pathForResource("calendar", ofType:"ps")
+//        var filedata = NSData(contentsOfFile:filePath!)
 
-        c.requestJob(filedata!)
+//        c.requestJob(filedata!)
 
     }
 
