@@ -1,8 +1,9 @@
-# Distributed UPrint Reference Implementation 
+# CUPS implementation in Swift
 
-DST stands for Distributed System
+Currently implements:
 
-- IPP implementation (RFC subset)
-- LPD implementation (RFC subset)
-- SMB implementation (or library wrapper)
-- SSH implementation (or library wrapper)
+- Basic IPP (RFC subset)
+
+Planned for near future:
+
+- Basic LPD (RFC subset)
